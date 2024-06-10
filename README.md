@@ -1,5 +1,6 @@
 LinkedIn Job Scraper
 This script (sor.py) automates the process of logging into LinkedIn, searching for job listings, and extracting job details using Selenium and BeautifulSoup. The extracted job details are saved into a CSV file.
+
 Prerequisites
 
 Python 3.x

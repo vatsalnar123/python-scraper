@@ -10,12 +10,12 @@ Installation
 
 Clone the Repository:
 
-bashCopy codegit clone https://github.com/vatsalnar123/python-scraper.git
+git clone https://github.com/vatsalnar123/python-scraper.git
 cd python-scraper
 
 Install Required Packages:
 
-bashCopy codepip install -r requirements.txt
+pip install -r requirements.txt
 Ensure requirements.txt includes:
 textCopy codeselenium
 webdriver-manager
@@ -25,7 +25,7 @@ Usage
 
 Run the Script:
 
-bashCopy codepython sor.py
+python sor.py
 
 Enter LinkedIn Credentials: The script will prompt you to enter your LinkedIn email and password.
 Enter Job Search Details: You will be asked to enter the job title and location for the job search.

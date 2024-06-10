@@ -1,29 +1,34 @@
-LinkedIn Job Scraper
+# LinkedIn Job Scraper
 
-The script (sor.py) automates the process of logging into LinkedIn, searching for job listings, and extracting job details using Selenium and BeautifulSoup. The extracted job details are saved into a CSV file.
+This script (`sor.py`) automates the process of logging into LinkedIn, searching for job listings, and extracting job details using Selenium and BeautifulSoup. The extracted job details are saved into a CSV file.
 
-Prerequisites
+## Prerequisites
 
-Python 3.x
-Google Chrome browser
-pip (Python package installer)
+- Python 3.x
+- Google Chrome browser
+- pip (Python package installer)
 
-Installation
+## Installation
 
-Clone the Repository:
+### Clone the Repository
 
+1. Clone the Repository:
+
+```bash
 git clone https://github.com/vatsalnar123/python-scraper.git
 cd python-scraper
+Install Required Packages
 
 Install Required Packages:
 
 pip install -r requirements.txt
 Ensure requirements.txt includes:
-textCopy codeselenium
+selenium
 webdriver-manager
 beautifulsoup4
 pandas
 Usage
+Run the Script
 
 Run the Script:
 
@@ -56,3 +61,6 @@ Notes
 
 Headless Mode: Uncomment the line # options.add_argument("--headless") in the initialize_driver function to run the browser in headless mode.
 Error Handling: The script includes basic error handling to manage issues like login failures, search initiation failures, and pagination errors.
+
+Copy code
+In this modified version, the main headings are prefixed with `#` for level 1, and the subheadings are prefixed with `##` for level 2, `###` for level 3, and so on. This will make the headings stand out from the rest of the content and provide a clear structure for the README file

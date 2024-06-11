@@ -1,181 +1,120 @@
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+# Import dependencies
+import requests
 from bs4 import BeautifulSoup
-import time
 import pandas as pd
-import re
-import sys
-import selenium
-import webdriver_manager
 
-def log_environment_info():
-    print(f"Selenium version: {selenium.__version__}")
-    print(f"Webdriver Manager version: {webdriver_manager.__version__}")
-    print(f"Pandas version: {pd.__version__}")
-    print(f"Python version: {sys.version}")
+def get_job_search_url(title, location, start=0):
+    """Constructs the LinkedIn job search URL."""
+    base_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+    params = {
+        "keywords": title,
+        "location": location,
+        "start": start
+    }
+    return base_url, params
 
-def initialize_driver():
-    service = Service(ChromeDriverManager().install())
-    options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
-    # Uncomment the next line to run in headless mode
-    # options.add_argument("--headless")
-    driver = webdriver.Chrome(service=service, options=options)
-    return driver
-
-def login_to_linkedin(driver, username_str, password_str):
-    driver.get("https://linkedin.com/uas/login")
-    time.sleep(5)
-    
-    username = driver.find_element(By.ID, "username")
-    username.send_keys(username_str)  
-    
-    pword = driver.find_element(By.ID, "password")
-    pword.send_keys(password_str)
-    
-    driver.find_element(By.XPATH, "//button[@type='submit']").click()
-    time.sleep(5)
-
-def search_and_extract_urls(driver, job_title, location):
-    driver.get("https://www.linkedin.com/jobs")
-    
-    try:
-        search_job = WebDriverWait(driver, 60).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='Search by title, skill, or company']"))
-        )
-        search_location = driver.find_element(By.CSS_SELECTOR, "input[aria-label='City, state, or zip code']")
-        
-        search_job.send_keys(job_title)
-        search_location.send_keys(location)
-        search_location.send_keys(Keys.RETURN)
-    except Exception as e:
-        print(f"Failed to initiate search: {str(e)}")
-        driver.quit()
-        return []
-
-    time.sleep(10)  # Allow time for search results to load
+def fetch_job_urls(title, location):
+    """Fetch job URLs based on job title and location."""
     job_urls = []
-    page_number = 1
-    
+    start = 0
+
     while True:
-        try:
-            links = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/jobs/view/"]')
-            if not links:
-                print(f"No job links found on page {page_number}")
-                break
-
-            for link in links:
-                job_url = link.get_attribute('href')
-                if job_url and job_url.startswith('/'):
-                    job_url = "https://www.linkedin.com" + job_url
-                job_urls.append(job_url)
-
-            print(f"Found {len(links)} job links on page {page_number}")
-
-            # Scroll to the bottom of the page before clicking the "Next" button
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)  # Wait for the page to scroll
-
-            try:
-                next_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Next']"))
-                )
-                next_button.click()
-                page_number += 1
-                print(f"Moving to page {page_number}")
-                time.sleep(10)  # Wait for next page of results to load
-            except:
-                print("No 'Next' button found or it is not clickable")
-                break
-        except Exception as e:
-            print(f"Error during pagination: {str(e)}")
+        url, params = get_job_search_url(title, location, start)
+        response = requests.get(url, params=params)
+        
+        if response.status_code != 200:
             break
+        
+        soup = BeautifulSoup(response.text, "html.parser")
+        jobs = soup.find_all("li")
+        
+        if not jobs:
+            break
+        
+        for job in jobs:
+            job_link = job.find("a", {"class": "base-card__full-link"})
+            if job_link:
+                job_urls.append(job_link.get('href'))
+        
+        start += len(jobs)
     
-    print(f"Total job URLs found: {len(job_urls)}")
     return job_urls
 
-def extract_job_details(driver, job_urls):
+def fetch_job_details(job_urls):
+    """Fetch job details from a list of job URLs."""
     job_details = []
-    for index, url in enumerate(job_urls):
-        if not url:
-            continue
-        driver.get(url)
-        time.sleep(5)
+    
+    for job_url in job_urls:
         try:
-            title = WebDriverWait(driver, 60).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'h1'))
-            ).text
+            response = requests.get(job_url)
+            if response.status_code != 200:
+                continue
+            
+            soup = BeautifulSoup(response.text, "html.parser")
+            job_post = {"url": job_url}
             
             try:
-                company = driver.find_element(By.CSS_SELECTOR, 'a[href*="/company/"]').text
+                job_post["job_title"] = soup.find("h1", {"class": "top-card-layout__title"}).text.strip()
             except:
-                try:
-                    company = driver.find_element(By.CSS_SELECTOR, 'div.topcard__org-name-link').text
-                except:
-                    company = "Company not found"
+                job_post["job_title"] = None
             
-            description = None
-            description_selectors = [
-                'div.show-more-less-html__markup',
-                'div.description__text',
-                'div[class*="description__content"]',
-                'div[class*="job-description"]',
-                'div[class*="description"]',
-                'section[class*="description"]'
-            ]
-            for selector in description_selectors:
-                try:
-                    description = driver.find_element(By.CSS_SELECTOR, selector).text
-                    break
-                except:
-                    continue
+            try:
+                job_post["company_name"] = soup.find("a", {"class": "topcard__org-name-link"}).text.strip()
+            except:
+                job_post["company_name"] = None
             
-            if not description:
-                description = "Description not found"
+            try:
+                description = soup.find("div", {"class": "show-more-less-html__markup"}).get_text(separator="\n").strip()
+                job_post["job_description"] = description
+            except:
+                job_post["job_description"] = None
             
-            employee_size = 'Not Available'
-
-            job_details.append({
-                'URL': url,
-                'Title': title,
-                'Company': company,
-                'Description': description,
-                'Employee Size': employee_size
-            })
-            print(f"Extracted details for job {index + 1}/{len(job_urls)}")
+            try:
+                employee_size = soup.find("span", {"class": "org-top-card-summary__company-size-definition-text"}).text.strip()
+                job_post["employee_size"] = employee_size
+            except:
+                job_post["employee_size"] = None
+            
+            job_details.append(job_post)
+        
         except Exception as e:
-            print(f"Failed to extract data for {url}: {str(e)}")
-
+            continue
+    
     return job_details
 
-def main():
-    log_environment_info()
-    driver = initialize_driver()
-    
-    username_str = input("Enter LinkedIn email: ")
-    password_str = input("Enter LinkedIn password: ")
-    
-    login_to_linkedin(driver, username_str, password_str)
-    
-    job_title = input("Enter the job title: ")
-    location = input("Enter the location: ")
-    
-    job_urls = search_and_extract_urls(driver, job_title, location)
-    
-    job_details = extract_job_details(driver, job_urls)
-    driver.quit()
+def save_to_csv(job_details, filename='jobarea.csv'):
+    """Save job details to a CSV file."""
+    try:
+        existing_df = pd.read_csv(filename)
+        existing_urls = existing_df['url'].tolist()
+    except FileNotFoundError:
+        existing_df = pd.DataFrame()
+        existing_urls = []
 
-    if job_details:
-        df = pd.DataFrame(job_details)
-        df.to_csv('job_details.csv', index=False)
-        print("Job details extracted and saved to job_details.csv")
+    new_job_details = [job for job in job_details if job['url'] not in existing_urls]
+
+    if new_job_details:
+        df = pd.DataFrame(new_job_details)
+        df.to_csv(filename, index=False, mode='a', header=not existing_df.empty)
     else:
-        print("No job details extracted")
+        print("No new jobs to add.")
+
+def main():
+   
+    title = input("Enter the job title: ")
+    location = input("Enter the job location: ")
+    
+   
+    job_urls = fetch_job_urls(title, location)
+    print(f"Found {len(job_urls)} job URLs.")
+    
+   
+    job_details = fetch_job_details(job_urls)
+    print(f"Fetched details for {len(job_details)} jobs.")
+    
+   
+    save_to_csv(job_details, 'jo.csv')
+    print("Job details saved to jo.csv.")
 
 if __name__ == "__main__":
     main()

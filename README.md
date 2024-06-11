@@ -42,30 +42,43 @@ User Input
 When prompted, enter the job title and location:
 
 Enter the job title: Data Scientist
+
 Enter the job location: San Francisco
+
 The script will fetch the job URLs, extract job details, and save them to a CSV file named jo.csv.
 
 Script Structure
+
 get_job_search_url(title, location, start=0)
+
 This function constructs the LinkedIn job search URL based on the provided job title, location, and start index.
 
 fetch_job_urls(title, location)
+
 This function fetches job URLs from the LinkedIn job search API based on the job title and location. It handles pagination and returns a list of job URLs.
 
 fetch_job_details(job_urls)
+
 This function takes a list of job URLs and fetches the job details for each URL. It extracts information such as job title, company name, job description, and employee size. The job details are returned as a list of dictionaries.
 
 save_to_csv(job_details, filename='jobarea.csv')
+
 This function saves the job details to a CSV file. If the file already exists, it appends the new job details to the existing file, avoiding duplicates.
 
 main()
+
 This is the main function that gets executed when the script is run. It prompts the user for job title and location, fetches job URLs, extracts job details, and saves them to a CSV file.
 
 Example Output
+
 When the script runs successfully, it will output messages similar to the following:
 
 Enter the job title: Data Scientist
+
 Enter the job location: San Francisco
+
 Found 25 job URLs.
+
 Fetched details for 25 jobs.
+
 Job details saved to jo.csv.

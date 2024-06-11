@@ -1,6 +1,6 @@
 LinkedIn Job Scraper
 
-This Python script scrapes job listings from LinkedIn based on a job title and location provided by the user. It utilizes the requests and BeautifulSoup libraries to fetch and parse HTML content from LinkedIn's job search API.
+The linkedin_scraper Python script scrapes job listings from LinkedIn based on a job title and location provided by the user. It utilizes the requests and BeautifulSoup libraries to fetch and parse HTML content from LinkedIn's job search API.
 
 Features
 
@@ -81,4 +81,4 @@ Found 25 job URLs.
 
 Fetched details for 25 jobs.
 
-Job details saved to jo.csv.
+Job details saved to job_{place}.csv.
